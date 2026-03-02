@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مسجد الأمير فواز - جدة</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+
+body{
+    margin:0;
+    font-family:'Cairo',sans-serif;
+    color:#D4AF37;
+    overflow:hidden;
+    background:url('https://images.unsplash.com/photo-1580418827493-f2b22c0a76cb?q=80&w=1920') no-repeat center center fixed;
+    background-size:cover;
+}
+
+.overlay{
+    position:fixed;
+    top:0;left:0;
+    width:100%;height:100%;
+    background:rgba(0,0,0,0.75);
+}
+
+.content{
+    position:relative;
+    z-index:2;
+}
+
+.header{
+    text-align:center;
+    font-size:70px;
+    padding-top:25px;
+    font-weight:bold;
+}
+
+.clock{
+    text-align:center;
+    font-size:60px;
+}
+
+.date{
+    text-align:center;
+    font-size:28px;
+    margin-bottom:20px;
+}
+
+.container{
+    width:80%;
+    margin:auto;
+    font-size:45px;
+}
+
+.row{
+    display:flex;
+    justify-content:space-between;
+    padding:15px 30px;
+    border-bottom:1px solid rgba(212,175,55,0.4);
+}
+
+.next{
+    background:#D4AF37;
+    color:black;
+    border-radius:10px;
+}
+
+.countdown{
+    text-align:center;
+    font-size:50px;
+    margin-top:25px;
+    font-weight:bold;
+}
+
+/* شاشة الأذكار */
+.azkarScreen{
+    position:fixed;
+    top:0;left:0;
+    width:100%;height:100%;
+    background:rgba(0,0,0,0.95);
+    color:#D4AF37;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    font-size:55px;
+    padding:40px;
+    display:none;
+    z-index:5;
+}
+</style>
+</head>
+
+<body>
+
+<div class="overlay"></div>
+
+<div class="content">
+<div class="header">مسجد الأمير فواز</div>
+<div class="clock" id="clock"></div>
+<div class="date" id="date"></div>
+<div class="container" id="prayers"></div>
+<div class="countdown" id="iqama"></div>
+</div>
+
+<div class="azkarScreen" id="azkar"></div>
+
+<script>
+const iqamaOffset = 10;
+const azkarBefore = 5; // دقائق قبل الإقامة لعرض الأذكار
+const city = "Jeddah";
+const method = 4;
+
+const azkarList = [
+"سبحان الله وبحمده سبحان الله العظيم",
+"أستغفر الله العظيم وأتوب إليه",
+"اللهم صل وسلم على نبينا محمد",
+"لا إله إلا الله وحده لا شريك له"
+];
+
+function updateClock(){
+    document.getElementById("clock").innerHTML =
+    new Date().toLocaleTimeString('ar-EG');
+}
+setInterval(updateClock,1000);
+updateClock();
+
+async function loadPrayers(){
+const res=await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${city}&country=SA&method=${method}`);
+const data=await res.json();
+const t=data.data.timings;
+
+const prayers=[
+{name:"الفجر",time:t.Fajr},
+{name:"الظهر",time:t.Dhuhr},
+{name:"العصر",time:t.Asr},
+{name:"المغرب",time:t.Maghrib},
+{name:"العشاء",time:t.Isha}
+];
+
+const container=document.getElementById("prayers");
+container.innerHTML="";
+const now=new Date();
+let nextPrayer=null;
+let iqamaTime=null;
+
+prayers.forEach(p=>{
+const [h,m]=p.time.split(":");
+let pt=new Date();
+pt.setHours(h);
+pt.setMinutes(m);
+pt.setSeconds(0);
+
+if(!nextPrayer && pt>now){
+nextPrayer=p.name;
+iqamaTime=new Date(pt.getTime()+iqamaOffset*60000);
+}
+
+const row=document.createElement("div");
+row.className="row";
+row.innerHTML=`<div>${p.name}</div><div>${p.time}</div>`;
+container.appendChild(row);
+});
+
+if(nextPrayer){
+setInterval(()=>{
+const diff=iqamaTime-new Date();
+const minutes=Math.floor(diff/60000);
+const seconds=Math.floor(diff/1000)%60;
+
+document.getElementById("iqama").innerHTML=
+`إقامة ${nextPrayer} بعد: ${minutes}:${seconds}`;
+
+if(minutes<=azkarBefore && minutes>0){
+showAzkar();
+}else{
+hideAzkar();
+}
+
+},1000);
+}
+}
+
+function showAzkar(){
+const azkar=document.getElementById("azkar");
+azkar.style.display="flex";
+azkar.innerHTML=azkarList[Math.floor(Math.random()*azkarList.length)];
+}
+
+function hideAzkar(){
+document.getElementById("azkar").style.display="none";
+}
+
+async function loadHijri(){
+const res=await fetch(`https://api.aladhan.com/v1/gToH?date=${new Date().toLocaleDateString('en-GB')}`);
+const data=await res.json();
+const h=data.data.hijri;
+document.getElementById("date").innerHTML=
+`${h.weekday.ar} ${h.day} ${h.month.ar} ${h.year} هـ`;
+}
+
+loadPrayers();
+loadHijri();
+</script>
+
+</body>
+</html>
