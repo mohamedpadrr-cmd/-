@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>مسجد الأمير فواز - شاشة الأوقات</title>
+<title>مسجد الأمير فواز - شاشة الأوقات والأذكار</title>
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
@@ -249,6 +249,20 @@
     font-weight: normal;
     font-size: 20px;
   }
+
+  /* شاشة الأذكار */
+  .azkar-box {
+    background: #2f2f2f;
+    border-radius: 10px;
+    padding: 15px;
+    color: #b9d02b;
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+    min-height: 120px;
+    box-shadow: 0 0 10px #b9d02b inset;
+    user-select: none;
+  }
 </style>
 </head>
 
@@ -281,10 +295,11 @@
         <div><span class="temp-icon">🌙</span> <span id="tempNight">20°C</span></div>
       </div>
 
-      <div class="prayers" id="prayersList">
-        <!-- أوقات الصلاة تظهر هنا -->
-      </div>
+      <div class="prayers" id="prayersList"></div>
       <div class="iqama-countdown" id="iqamaCountdown"></div>
+
+      <!-- مكان الأذكار -->
+      <div class="azkar-box" id="azkarBox">جاري تحميل الأذكار...</div>
     </div>
   </div>
 
@@ -295,17 +310,46 @@
   const iqamaOffset = 10; // دقائق بعد وقت الصلاة للإقامة
   const azkarBefore = 5;  // دقائق قبل الإقامة لعرض الأذكار
 
-  const azkarList = [
+  // أذكار لكل صلاة (يمكن تعديل أو إضافة حسب الحاجة)
+  const azkarByPrayer = {
+    الفجر: [
+      "أَصْبَحْنا وأصبح الملك لله",
+      "اللهم بك أصبحنا وبك أمسينا",
+      "اللهم أنت ربي لا إله إلا أنت"
+    ],
+    الظهر: [
+      "اللهم إني أعوذ بك من الهم والحزن",
+      "اللهم اجعل لي في كل خطوة بركة",
+      "اللهم اجعل عملي خالصًا لوجهك الكريم"
+    ],
+    العصر: [
+      "سبحان الله وبحمده",
+      "اللهم اجعلني من عبادك الصالحين",
+      "اللهم اغفر لنا ولوالدينا"
+    ],
+    المغرب: [
+      "اللهم صل وسلم على نبينا محمد",
+      "اللهم ارحم والديّ وارزقهم الجنة",
+      "اللهم اجعل يومي هذا مباركًا"
+    ],
+    العشاء: [
+      "أستغفر الله العظيم",
+      "اللهم اجعل نومي هنيئًا ومباركًا",
+      "اللهم اجعل قلبي مطمئنًا بك"
+    ]
+  };
+
+  // أذكار عامة في الأوقات الأخرى
+  const generalAzkar = [
     "سبحان الله وبحمده سبحان الله العظيم",
     "أستغفر الله العظيم وأتوب إليه",
     "اللهم صل وسلم على نبينا محمد",
-    "لا إله إلا الله وحده لا شريك له له الملك وله الحمد وهو على كل شيء قدير",
-    "اللهم أعني على ذكرك وشكرك وحسن عبادتك",
-    "سبحان الله والحمد لله ولا إله إلا الله والله أكبر"
+    "لا إله إلا الله وحده لا شريك له له الملك وله الحمد وهو على كل شيء قدير"
   ];
 
   let azkarInterval = null;
   let currentIqamaTime = null;
+  let currentPrayer = null;
 
   // ==== الساعة التناظرية ====
   function updateAnalogClock() {
@@ -410,14 +454,17 @@
 
   // ==== تمييز الصلاة القادمة ====
   function highlightNext(name) {
+    currentPrayer = name;
     document.querySelectorAll('.row').forEach(r => {
       if (r.innerText.includes(name)) {
         r.classList.add('next');
+      } else {
+        r.classList.remove('next');
       }
     });
   }
 
-  // ==== عداد الإقامة + عرض الأذكار ====
+  // ==== عداد الإقامة + عرض الأذكار حسب الصلاة الحالية ====
   function startCountdown(prayerName) {
     setInterval(() => {
       const now = new Date();
@@ -436,53 +483,36 @@
         `إقامة ${prayerName} بعد: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 
       if (minutes <= azkarBefore) {
-        showAzkar();
+        showAzkar(prayerName);
       } else {
         hideAzkar();
       }
-
     }, 1000);
   }
 
-  // ==== عرض الأذكار ====
-  function showAzkar() {
-    if (document.getElementById('azkar').style.display === 'flex') return;
-    document.getElementById('azkar').style.display = 'flex';
-    document.getElementById('azkar').innerHTML = azkarList[0];
+  // ==== عرض الأذكار حسب الصلاة الحالية ====
+  function showAzkar(prayerName) {
+    const azkarBox = document.getElementById('azkarBox');
+    if (azkarInterval) return;
+
+    let currentAzkarList = azkarByPrayer[prayerName] || generalAzkar;
+    let idx = 0;
+
+    azkarBox.innerText = currentAzkarList[idx];
 
     azkarInterval = setInterval(() => {
-      const azkarText = azkarList[Math.floor(Math.random() * azkarList.length)];
-      document.getElementById('azkar').innerHTML = azkarText;
+      idx++;
+      if (idx >= currentAzkarList.length) idx = 0;
+      azkarBox.innerText = currentAzkarList[idx];
     }, 15000);
   }
 
   // ==== إخفاء الأذكار ====
   function hideAzkar() {
-    const azkar = document.getElementById('azkar');
-    if (!azkar) return;
-    azkar.style.display = 'none';
     clearInterval(azkarInterval);
+    azkarInterval = null;
+    document.getElementById('azkarBox').innerText = 'الأذكار ستظهر قبل كل صلاة';
   }
 
   // ==== تحميل التاريخ الهجري ====
   async function loadHijri() {
-    const res = await fetch(`https://api.aladhan.com/v1/gToH?date=${new Date().toLocaleDateString('en-GB')}`);
-    const data = await res.json();
-    const h = data.data.hijri;
-    const hijriText = `${h.weekday.ar} ${h.day} ${h.month.ar} ${h.year} هـ`;
-    document.getElementById('hijriDate').innerText = hijriText;
-  }
-
-  // ==== تحميل الطقس ====
-  async function loadWeather() {
-    // نستخدم API مجاني من Open-Meteo (بدون مفتاح API)
-    // موقع جدة: خط عرض 21.4858، خط طول 39.1925
-    try {
-      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=21.4858&longitude=39.1925&hourly=temperature_2m&current_weather=true&temperature_unit=celsius');
-      const data = await res.json();
-      const tempCurrent = data.current_weather.temperature.toFixed(1);
-      // تقريب درجة الحرارة ليلا (نأخذ متوسط درجات الحرارة بين 20:00-06:00 تقريبا)
-      // هذا تبسيط فقط، نعرض درجة الحرارة الحالية ونظام 24 ساعة للتجربة
-      document.getElementById('tempCurrent').innerText = tempCurrent + '°C';
-      document.getElementById('tempNight').innerText = '20°C
-</html>
