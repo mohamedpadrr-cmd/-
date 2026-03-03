@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>مسجد الأمير فواز - جدة</title>
+<title>جامع الأمير فواز - جدة</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -11,10 +11,13 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  background: black;
-  color: white;
+  background: #000;
+  color: #fff;
   font-family: Tahoma, Arial;
+  overflow: hidden;
 }
+
+/* ===== العنوان ===== */
 .header {
   text-align: center;
   padding: 20px 0;
@@ -24,72 +27,115 @@ html, body {
   font-size: 64px;
 }
 .header h2 {
-  margin: 10px 0 0;
-  font-size: 40px;
-  color: #00ff99;
+  margin-top: 8px;
+  font-size: 38px;
+  color: #d4af37;
 }
+
+/* ===== المنتصف ===== */
+.center {
+  text-align: center;
+  margin: 10px 0;
+}
+.zikr {
+  font-size: 46px;
+  margin-bottom: 10px;
+}
+.date {
+  font-size: 34px;
+  color: #ccc;
+}
+
+/* ===== جدول الصلاة ===== */
 .table {
   width: 80%;
-  margin: auto;
-  font-size: 48px;
+  margin: 20px auto;
+  font-size: 46px;
 }
 .row {
   display: flex;
   justify-content: space-between;
-  padding: 14px 0;
+  padding: 12px 0;
   border-bottom: 1px solid #333;
 }
-.footer {
-  text-align: center;
-  margin-top: 30px;
-  font-size: 32px;
-  color: #ccc;
+.iqama {
+  font-size: 28px;
+  color: #aaa;
+}
+.highlight {
+  color: #ffd700;
 }
 </style>
 </head>
 
 <body>
 
+<!-- ===== العنوان ===== -->
 <div class="header">
-  <h1>مسجد الأمير فواز</h1>
-  <h2>جدة – مواقيت الصلاة 2026</h2>
+  <h1>جامع الأمير فواز</h1>
+  <h2>جدة</h2>
 </div>
 
-<div class="table" id="prayers"></div>
+<!-- ===== المنتصف ===== -->
+<div class="center">
+  <div class="zikr" id="zikr"></div>
+  <div class="date" id="date"></div>
+</div>
 
-<div class="footer" id="date"></div>
+<!-- ===== جدول الصلاة ===== -->
+<div class="table" id="prayers">جاري تحميل المواقيت…</div>
 
 <script>
-/*
-📌 ضع هنا جدول مواقيت 2026 الرسمي (أم القرى)
-الصيغة:
-"2026-03-01": ["05:25","06:40","12:35","15:56","18:31","20:01"]
-*/
+/* ===== الأذكار (30 ثانية) ===== */
+const azkar = [
+  "أستغفر الله العظيم",
+  "سبحان الله وبحمده",
+  "لا إله إلا الله",
+  "اللهم صل وسلم على نبينا محمد",
+  "سبحان الله والحمد لله ولا إله إلا الله والله أكبر"
+];
+let zikrIndex = 0;
+function rotateZikr() {
+  document.getElementById("zikr").innerText = azkar[zikrIndex];
+  zikrIndex = (zikrIndex + 1) % azkar.length;
+}
+rotateZikr();
+setInterval(rotateZikr, 30000);
 
-const timetable = {
-  "2026-03-01": ["05:25","06:40","12:35","15:56","18:31","20:01"]
-  // ← يتم إضافة باقي أيام السنة هنا
-};
+/* ===== التاريخ ===== */
+const today = new Date();
+const days = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+const greg = today.toLocaleDateString("ar-SA");
+const hijri = today.toLocaleDateString("ar-SA-u-ca-islamic");
+document.getElementById("date").innerText =
+  `${days[today.getDay()]} | ${greg} | ${hijri}`;
 
-const today = new Date().toISOString().slice(0,10);
-const times = timetable[today];
-
-if (times) {
-  document.getElementById("prayers").innerHTML = `
-    <div class="row"><span>الفجر</span><span>${times[0]}</span></div>
-    <div class="row"><span>الشروق</span><span>${times[1]}</span></div>
-    <div class="row"><span>الظهر</span><span>${times[2]}</span></div>
-    <div class="row"><span>العصر</span><span>${times[3]}</span></div>
-    <div class="row"><span>المغرب</span><span>${times[4]}</span></div>
-    <div class="row"><span>العشاء</span><span>${times[5]}</span></div>
-  `;
-} else {
-  document.getElementById("prayers").innerText =
-    "مواقيت هذا اليوم غير مدخلة";
+/* ===== إضافة دقائق للإقامة ===== */
+function addMinutes(time, mins) {
+  const [h, m] = time.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h, m + mins, 0);
+  return d.toTimeString().slice(0,5);
 }
 
-document.getElementById("date").innerText =
-  new Date().toLocaleDateString('ar-SA');
+/* ===== جلب مواقيت جدة (أم القرى) ===== */
+fetch("https://api.aladhan.com/v1/timingsByCity?city=Jeddah&country=Saudi%20Arabia&method=4")
+.then(res => res.json())
+.then(data => {
+  const t = data.data.timings;
+  document.getElementById("prayers").innerHTML = `
+    <div class="row"><span>الفجر</span><span>${t.Fajr} <span class="iqama">الإقامة ${addMinutes(t.Fajr,10)}</span></span></div>
+    <div class="row"><span>الشروق</span><span>${t.Sunrise}</span></div>
+    <div class="row"><span>الظهر</span><span>${t.Dhuhr} <span class="iqama">الإقامة ${addMinutes(t.Dhuhr,10)}</span></span></div>
+    <div class="row"><span>العصر</span><span>${t.Asr} <span class="iqama">الإقامة ${addMinutes(t.Asr,10)}</span></span></div>
+    <div class="row"><span>المغرب</span><span>${t.Maghrib} <span class="iqama">الإقامة ${addMinutes(t.Maghrib,10)}</span></span></div>
+    <div class="row"><span>العشاء</span><span>${t.Isha} <span class="iqama">الإقامة ${addMinutes(t.Isha,10)}</span></span></div>
+  `;
+})
+.catch(() => {
+  document.getElementById("prayers").innerText =
+    "تعذر تحميل المواقيت – تحقق من الاتصال بالإنترنت";
+});
 </script>
 
 </body>
