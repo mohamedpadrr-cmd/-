@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>مسجد الأمير فواز - جدة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: black;
+  color: white;
+  font-family: Tahoma, Arial;
+}
+.header {
+  text-align: center;
+  padding: 20px 0;
+}
+.header h1 {
+  margin: 0;
+  font-size: 64px;
+}
+.header h2 {
+  margin: 10px 0 0;
+  font-size: 40px;
+  color: #00ff99;
+}
+.table {
+  width: 80%;
+  margin: auto;
+  font-size: 48px;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid #333;
+}
+.footer {
+  text-align: center;
+  margin-top: 30px;
+  font-size: 32px;
+  color: #ccc;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h1>مسجد الأمير فواز</h1>
+  <h2>جدة – مواقيت الصلاة 2026</h2>
+</div>
+
+<div class="table" id="prayers"></div>
+
+<div class="footer" id="date"></div>
+
+<script>
+/*
+📌 ضع هنا جدول مواقيت 2026 الرسمي (أم القرى)
+الصيغة:
+"2026-03-01": ["05:25","06:40","12:35","15:56","18:31","20:01"]
+*/
+
+const timetable = {
+  "2026-03-01": ["05:25","06:40","12:35","15:56","18:31","20:01"]
+  // ← يتم إضافة باقي أيام السنة هنا
+};
+
+const today = new Date().toISOString().slice(0,10);
+const times = timetable[today];
+
+if (times) {
+  document.getElementById("prayers").innerHTML = `
+    <div class="row"><span>الفجر</span><span>${times[0]}</span></div>
+    <div class="row"><span>الشروق</span><span>${times[1]}</span></div>
+    <div class="row"><span>الظهر</span><span>${times[2]}</span></div>
+    <div class="row"><span>العصر</span><span>${times[3]}</span></div>
+    <div class="row"><span>المغرب</span><span>${times[4]}</span></div>
+    <div class="row"><span>العشاء</span><span>${times[5]}</span></div>
+  `;
+} else {
+  document.getElementById("prayers").innerText =
+    "مواقيت هذا اليوم غير مدخلة";
+}
+
+document.getElementById("date").innerText =
+  new Date().toLocaleDateString('ar-SA');
+</script>
+
+</body>
+</html>
